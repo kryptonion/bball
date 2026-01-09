@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bowling Match Stats</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    header {
+      padding: 16px;
+      text-align: center;
+      background: linear-gradient(90deg, #1e3a8a, #0ea5e9);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    section {
+      padding: 16px;
+      max-width: 100%;
+    }
+    h2 {
+      border-left: 4px solid #38bdf8;
+      padding-left: 10px;
+      color: #38bdf8;
+      font-size: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: #020617;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 6px;
+      text-align: center;
+      border-bottom: 1px solid #1e293b;
+    }
+    th {
+      color: #7dd3fc;
+    }
+    .winner {
+      color: #facc15;
+      font-weight: bold;
+    }
+    details {
+      margin-top: 12px;
+      background: #020617;
+      padding: 12px;
+      border-radius: 10px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+      color: #38bdf8;
+      outline: none;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .card {
+      background: #020617;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 0 0 1px #1e293b;
+      text-align: center;
+    }
+    footer {
+      text-align: center;
+      padding: 12px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎳 Bowling Match Statistics</h1>
+  <p>3 Games • 4 Players</p>
+</header>
+
+<section>
+  <h2>Overall Leaderboard</h2>
+  <table>
+    <tr>
+      <th>Rank</th>
+      <th>Player</th>
+      <th>Total</th>
+      <th>Avg</th>
+      <th>Wins</th>
+    </tr>
+    <tr>
+      <td>1</td><td>Kratos</td><td>309</td><td>103.0</td><td>2</td>
+    </tr>
+    <tr>
+      <td>2</td><td>Soul</td><td>275</td><td>91.7</td><td>1</td>
+    </tr>
+    <tr>
+      <td>3</td><td>Lord</td><td>272</td><td>90.7</td><td>0</td>
+    </tr>
+    <tr>
+      <td>4</td><td>Vortex</td><td>260</td><td>86.7</td><td>0</td>
+    </tr>
+  </table>
+</section>
+
+<section>
+  <h2>Match Results</h2>
+
+  <details>
+    <summary>Tap to view all game scores</summary>
+
+    <h3>Game 1</h3>
+    <table>
+      <tr><th>Player</th><th>Score</th></tr>
+      <tr class="winner"><td>Kratos</td><td>106</td></tr>
+      <tr><td>Lord</td><td>89</td></tr>
+      <tr><td>Soul</td><td>67</td></tr>
+      <tr><td>Vortex</td><td>95</td></tr>
+    </table>
+
+    <h3>Game 2</h3>
+    <table>
+      <tr><th>Player</th><th>Score</th></tr>
+      <tr><td>Vortex</td><td>88</td></tr>
+      <tr class="winner"><td>Soul</td><td>115</td></tr>
+      <tr><td>Kratos</td><td>68</td></tr>
+      <tr><td>Lord</td><td>98</td></tr>
+    </table>
+
+    <h3>Game 3</h3>
+    <table>
+      <tr><th>Player</th><th>Score</th></tr>
+      <tr><td>Vortex</td><td>77</td></tr>
+      <tr><td>Soul</td><td>93</td></tr>
+      <tr class="winner"><td>Kratos</td><td>135</td></tr>
+      <tr><td>Lord</td><td>85</td></tr>
+    </table>
+  </details>
+</section>
+
+
+
+<section>
+  <h2>Match Highlights</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>🏆 MVP</h3>
+      <p class="highlight">Kratos</p>
+    </div>
+    <div class="card">
+      <h3>🔥 Highest Single Game</h3>
+      <p>Kratos – <span class="highlight">135</span></p>
+    </div>
+    <div class="card">
+      <h3>📉 Lowest Single Game</h3>
+      <p>Kratos – <span class="highlight">68</span></p>
+    </div>
+    <div class="card">
+      <h3>📊 Best Team Game</h3>
+      <p>Game 2 – <span class="highlight">390</span></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Bowling stats dashboard • Generated automatically
+</footer>
+
+</body>
+</html>
