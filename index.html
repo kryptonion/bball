@@ -166,6 +166,78 @@
     footer { background: var(--ink); color: var(--warm-gray); text-align: center; padding: 28px 20px; }
     footer .f-logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 6px; color: var(--gold); margin-bottom: 6px; }
     footer p { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; }
+
+    /* REDESIGNED HIGH SCORE BUTTON & CONTAINER */
+    .hs-btn-wrap { display: flex; justify-content: center; margin-bottom: 30px; }
+    .btn-premium {
+      font-family: 'DM Mono', monospace; 
+      font-size: 10px; 
+      font-weight: 500;
+      letter-spacing: 3px; 
+      text-transform: uppercase;
+      background: rgba(10,10,8, 0.03); 
+      color: var(--ink); 
+      border: 2px solid var(--ink); /* Thicker border */
+      padding: 16px 40px; 
+      cursor: pointer; 
+      transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-premium::after { 
+      content: '↓'; 
+      font-size: 14px; 
+      transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); 
+    }
+    .btn-premium.active {
+      background: var(--ink);
+      color: var(--gold);
+    }
+    .btn-premium.active::after { 
+      transform: rotate(180deg); 
+    }
+    .btn-premium:hover:not(.active) { 
+      background: var(--ink); 
+      color: var(--paper);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(10,10,8,0.15);
+    }
+
+    .hs-container { 
+      max-height: 0; 
+      overflow: hidden; 
+      transition: max-height 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      background: #fff;
+      border-radius: 4px;
+    }
+    .hs-container.active { 
+      max-height: 1400px; 
+      margin-bottom: 40px;
+      border: 1px solid var(--rule);
+    }
+    
+    .hs-inner { padding: 30px 20px; }
+
+    .hs-row { 
+      display: grid; 
+      grid-template-columns: 40px 1fr auto; 
+      align-items: center; 
+      padding: 16px 0; 
+      border-bottom: 1px solid var(--cream); 
+      opacity: 0; 
+      transform: translateY(20px); 
+      transition: all 0.5s ease; 
+    }
+    .hs-row.in { opacity: 1; transform: translateY(0); }
+    .hs-rank { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--rule); }
+    .hs-row:nth-child(-n+4) .hs-rank { color: var(--gold); }
+    .hs-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--ink); }
+    .hs-meta { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--warm-gray); text-transform: uppercase; letter-spacing: 1px; }
+    .hs-score { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--rust); }
   </style>
 </head>
 <body>
@@ -195,21 +267,21 @@ const MATCH_DATA = {
 
 const processStats = () => {
   const { players, games } = MATCH_DATA;
-  
-  // Initialize streaks
   const playerStreaks = players.map(() => ({ currentWin: 0, maxWin: 0, currentLose: 0, maxLose: 0 }));
+  const allScores = [];
 
   const stats = players.map((name, pIdx) => {
-    const scores = games.map(g => g[pIdx]);
+    const scores = games.map((g, gIdx) => {
+      allScores.push({ name, score: g[pIdx], game: gIdx + 1 });
+      return g[pIdx];
+    });
     const totalPoints = scores.reduce((a, b) => a + b, 0);
     const avg = (totalPoints / games.length).toFixed(1);
     
     let wins = 0;
     games.forEach((g, gIdx) => {
       const maxScore = Math.max(...g);
-      const isWinner = (g[pIdx] === maxScore);
-      
-      if (isWinner) {
+      if (g[pIdx] === maxScore) {
         wins++;
         playerStreaks[pIdx].currentWin++;
         playerStreaks[pIdx].maxWin = Math.max(playerStreaks[pIdx].maxWin, playerStreaks[pIdx].currentWin);
@@ -220,61 +292,37 @@ const processStats = () => {
         playerStreaks[pIdx].currentWin = 0;
       }
     });
-
     return { name, totalPoints, avg, wins, scores, maxWin: playerStreaks[pIdx].maxWin, maxLose: playerStreaks[pIdx].maxLose };
   });
 
   const ranked = [...stats].sort((a, b) => b.totalPoints - a.totalPoints);
+  const highScores = allScores.sort((a, b) => b.score - a.score).slice(0, 10);
   const maxTotal = ranked[0].totalPoints;
 
-  // Streak Highlights
-  const bestStreakPlayer = stats.reduce((prev, current) => (prev.maxWin > current.maxWin) ? prev : current);
-  const worstStreakPlayer = stats.reduce((prev, current) => (prev.maxLose > current.maxLose) ? prev : current);
+  let highGameVal = -1, highGamePlayer = "";
+  games.forEach(g => g.forEach((s, pi) => { if(s > highGameVal) { highGameVal = s; highGamePlayer = players[pi]; }}));
 
-  // High Game Calculation
-  let highGameVal = -1;
-  let highGamePlayer = "";
-  games.forEach(g => {
-    g.forEach((score, pIdx) => {
-      if (score > highGameVal) {
-        highGameVal = score;
-        highGamePlayer = players[pIdx];
-      }
-    });
-  });
+  let lowGameVal = 999, lowGamePlayer = "";
+  games.forEach(g => g.forEach((s, pi) => { if(s < lowGameVal) { lowGameVal = s; lowGamePlayer = players[pi]; }}));
 
-  // Low Game Calculation
-  let lowGameVal = 999;
-  let lowGamePlayer = "";
-  games.forEach(g => {
-    g.forEach((score, pIdx) => {
-      if (score < lowGameVal) {
-        lowGameVal = score;
-        lowGamePlayer = players[pIdx];
-      }
-    });
-  });
-  
   const gameTotals = games.map(g => g.reduce((a, b) => a + b, 0));
   const bestTeamTotal = Math.max(...gameTotals);
   const bestTeamIndex = gameTotals.indexOf(bestTeamTotal) + 1;
 
   return { 
-    ranked, maxTotal, stats, 
-    highGameVal, highGamePlayer, 
-    lowGameVal, lowGamePlayer, 
+    ranked, maxTotal, highScores,
+    highGameVal, highGamePlayer, lowGameVal, lowGamePlayer, 
     bestTeamTotal, bestTeamIndex,
-    bestStreakPlayer, worstStreakPlayer 
+    bestStreakPlayer: stats.reduce((a, b) => a.maxWin > b.maxWin ? a : b),
+    worstStreakPlayer: stats.reduce((a, b) => a.maxLose > b.maxLose ? a : b)
   };
 };
 
 const renderApp = () => {
   const { 
-    ranked, maxTotal, 
-    highGameVal, highGamePlayer, 
-    lowGameVal, lowGamePlayer, 
-    bestTeamTotal, bestTeamIndex,
-    bestStreakPlayer, worstStreakPlayer
+    ranked, maxTotal, highScores,
+    highGameVal, highGamePlayer, lowGameVal, lowGamePlayer, 
+    bestTeamTotal, bestTeamIndex, bestStreakPlayer, worstStreakPlayer
   } = processStats();
   
   const totalPointsAll = MATCH_DATA.games.flat().reduce((a, b) => a + b, 0);
@@ -315,8 +363,6 @@ const renderApp = () => {
       </section>
     </div>
 
-    <hr class="rule" />
-
     <section>
       <div class="section-label reveal">Rankings</div>
       <div class="section-title">Leaderboard</div>
@@ -353,7 +399,6 @@ const renderApp = () => {
           const gameMax = Math.max(...g);
           const combined = g.reduce((a, b) => a + b, 0);
           const gameSorted = MATCH_DATA.players.map((name, pi) => ({ name, score: g[pi] })).sort((a,b) => b.score - a.score);
-          
           return `
             <div class="game-card scale-in">
               <div class="game-header">
@@ -372,8 +417,7 @@ const renderApp = () => {
                   </div>
                 `).join('')}
               </div>
-            </div>
-          `;
+            </div>`;
         }).join('')}
       </div>
     </section>
@@ -381,41 +425,39 @@ const renderApp = () => {
     <hr class="rule" />
 
     <section>
+      <div class="hs-btn-wrap reveal">
+        <button id="hs-trigger" class="btn-premium" onclick="toggleHighScores()">View Top Performances</button>
+      </div>
+      <div id="hs-list" class="hs-container">
+        <div class="hs-inner">
+          <div class="section-label">All-Time Peak</div>
+          <div class="section-title">Top 10 Scores</div>
+          <div class="hs-stack">
+            ${highScores.map((hs, i) => `
+              <div class="hs-row">
+                <div class="hs-rank">#${i + 1}</div>
+                <div class="hs-info">
+                  <div class="hs-name">${hs.name}</div>
+                  <div class="hs-meta">Match Game ${String(hs.game).padStart(2, '0')}</div>
+                </div>
+                <div class="hs-score">${hs.score}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
       <div class="section-label reveal">Distinctions</div>
       <div class="section-title">Match Highlights</div>
       <div class="highlights-grid stagger">
-        <div class="hl-card gold">
-          <div class="hl-icon">🏆</div>
-          <div class="hl-label">MVP</div>
-          <div class="hl-value">${ranked[0].name}<em>${ranked[0].wins}W</em></div>
-        </div>
-        <div class="hl-card sage">
-          <div class="hl-icon">⚡</div>
-          <div class="hl-label">Best Team</div>
-          <div class="hl-value">Game ${bestTeamIndex}<em>${bestTeamTotal}</em></div>
-        </div>
-        <div class="hl-card rust">
-          <div class="hl-icon">🔥</div>
-          <div class="hl-label">High Game</div>
-          <div class="hl-value">${highGamePlayer}<em>${highGameVal}</em></div>
-        </div>
-        <div class="hl-card">
-          <div class="hl-icon">🌑</div>
-          <div class="hl-label">Low Game</div>
-          <div class="hl-value">${lowGamePlayer}<em>${lowGameVal}</em></div>
-        </div>
-        <div class="hl-card">
-          <div class="hl-icon">📈</div>
-          <div class="hl-label">Longest Win Streak</div>
-          <div class="hl-value">${bestStreakPlayer.name}<em>${bestStreakPlayer.maxWin} Games</em></div>
-        </div>
-        <div class="hl-card">
-          <div class="hl-icon">📉</div>
-          <div class="hl-label">Longest Lose Streak</div>
-          <div class="hl-value">${worstStreakPlayer.name}<em>${worstStreakPlayer.maxLose} Games</em></div>
-        </div>
-        
-        
+        <div class="hl-card gold"><div class="hl-icon">🏆</div><div class="hl-label">MVP</div><div class="hl-value">${ranked[0].name}<em>${ranked[0].wins}W</em></div></div>
+        <div class="hl-card sage"><div class="hl-icon">⚡</div><div class="hl-label">Best Team</div><div class="hl-value">Game ${bestTeamIndex}<em>${bestTeamTotal}</em></div></div>
+        <div class="hl-card rust"><div class="hl-icon">🔥</div><div class="hl-label">High Game</div><div class="hl-value">${highGamePlayer}<em>${highGameVal}</em></div></div>
+        <div class="hl-card"><div class="hl-icon">🌑</div><div class="hl-label">Low Game</div><div class="hl-value">${lowGamePlayer}<em>${lowGameVal}</em></div></div>
+        <div class="hl-card"><div class="hl-icon">📈</div><div class="hl-label">Win Streak</div><div class="hl-value">${bestStreakPlayer.name}<em>${bestStreakPlayer.maxWin} Games</em></div></div>
+        <div class="hl-card"><div class="hl-icon">📉</div><div class="hl-label">Lose Streak</div><div class="hl-value">${worstStreakPlayer.name}<em>${worstStreakPlayer.maxLose} Games</em></div></div>
       </div>
     </section>
 
@@ -433,18 +475,15 @@ const initAnimations = () => {
       if (!entry.isIntersecting) return;
       const el = entry.target;
       el.classList.add('in');
-
       if (el.classList.contains('lb-row') || el.classList.contains('lb-stack') || el.classList.contains('stagger')) {
         el.querySelectorAll('.lb-bar').forEach(b => setTimeout(() => b.classList.add('animate'), 300));
         el.querySelectorAll('[data-count]').forEach((c, i) => setTimeout(() => animateCount(c), 300 + i * 80));
         el.querySelectorAll('.hl-card').forEach((card, i) => setTimeout(() => card.classList.add('in'), i * 80));
       }
-
       if (el.classList.contains('team-block')) {
         const score = el.querySelector('.t-score');
         if (score) setTimeout(() => score.classList.add('slam'), 150);
       }
-
       if (el.classList.contains('masthead-meta')) {
         el.querySelectorAll('[data-count]').forEach((c, i) => setTimeout(() => animateCount(c), 700 + i * 150));
       }
@@ -471,10 +510,28 @@ function animateCount(el) {
   requestAnimationFrame(tick);
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  renderApp();
-  initAnimations();
-});
+window.toggleHighScores = () => {
+  const list = document.getElementById('hs-list');
+  const btn = document.getElementById('hs-trigger');
+  const isActive = list.classList.toggle('active');
+  btn.classList.toggle('active');
+
+  if (isActive) {
+    const rows = list.querySelectorAll('.hs-row');
+    rows.forEach((row, i) => setTimeout(() => row.classList.add('in'), 150 + (i * 60)));
+    
+    // Smooth scroll for focus
+    setTimeout(() => {
+        const offset = window.innerWidth < 600 ? 50 : 100;
+        const top = list.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+    }, 400);
+  } else {
+    list.querySelectorAll('.hs-row').forEach(row => row.classList.remove('in'));
+  }
+};
+
+window.addEventListener('DOMContentLoaded', () => { renderApp(); initAnimations(); });
 </script>
 </body>
 </html>
