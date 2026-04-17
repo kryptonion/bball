@@ -258,16 +258,21 @@ const MATCH_DATA = {
     [108, 102, 96, 101],
     [128, 126, 127, 121],
     [106, 81, 99, 120],
-    [92,110,124,91]
+    [92, 110, 124, 91]
   ],
   teams: {
     challenger: { name: "Skull Esports", score: 3 },
     winner: { name: "Chauhan Brothers", score: 5 }
-  }
+  },
+  // Mapping indices: Lord (0), Kratos (1), Soul (2), Vortex (3)
+  duos: [
+    { name: "Soul & Kratos", indices: [2, 1] },
+    { name: "Lord & Vortex", indices: [0, 3] }
+  ]
 };
 
 const processStats = () => {
-  const { players, games } = MATCH_DATA;
+  const { players, games, duos } = MATCH_DATA;
   const playerStreaks = players.map(() => ({ currentWin: 0, maxWin: 0, currentLose: 0, maxLose: 0 }));
   const allScores = [];
 
@@ -296,6 +301,21 @@ const processStats = () => {
     return { name, totalPoints, avg, wins, scores, maxWin: playerStreaks[pIdx].maxWin, maxLose: playerStreaks[pIdx].maxLose };
   });
 
+  // DUO LOGIC
+  const duoPerformances = [];
+  games.forEach((g, gIdx) => {
+    duos.forEach(duo => {
+      const duoSum = g[duo.indices[0]] + g[duo.indices[1]];
+      duoPerformances.push({ 
+        names: duo.name, 
+        score: duoSum, 
+        game: gIdx + 1,
+        breakdown: `${g[duo.indices[0]]} + ${g[duo.indices[1]]}`
+      });
+    });
+  });
+  const sortedDuos = [...duoPerformances].sort((a, b) => b.score - a.score).slice(0, 5);
+
   const ranked = [...stats].sort((a, b) => b.totalPoints - a.totalPoints);
   const highScores = allScores.sort((a, b) => b.score - a.score).slice(0, 10);
   const maxTotal = ranked[0].totalPoints;
@@ -311,7 +331,7 @@ const processStats = () => {
   const bestTeamIndex = gameTotals.indexOf(bestTeamTotal) + 1;
 
   return { 
-    ranked, maxTotal, highScores,
+    ranked, maxTotal, highScores, sortedDuos,
     highGameVal, highGamePlayer, lowGameVal, lowGamePlayer, 
     bestTeamTotal, bestTeamIndex,
     bestStreakPlayer: stats.reduce((a, b) => a.maxWin > b.maxWin ? a : b),
@@ -321,7 +341,7 @@ const processStats = () => {
 
 const renderApp = () => {
   const { 
-    ranked, maxTotal, highScores,
+    ranked, maxTotal, highScores, sortedDuos,
     highGameVal, highGamePlayer, lowGameVal, lowGamePlayer, 
     bestTeamTotal, bestTeamIndex, bestStreakPlayer, worstStreakPlayer
   } = processStats();
@@ -426,6 +446,28 @@ const renderApp = () => {
     <hr class="rule" />
 
     <section>
+      <div class="section-label reveal">Peak Synergy</div>
+      <div class="section-title">Top Duo Scores</div>
+      <div class="lb-stack stagger">
+        ${sortedDuos.map((duo, i) => `
+          <div class="lb-row ${i === 0 ? 'top' : ''}">
+            <div class="lb-rank">#${i + 1}</div>
+            <div class="lb-info">
+              <div class="lb-name">${duo.names}</div>
+              <div class="lb-sub"><span>GAME ${duo.game}</span><span>SPLIT: ${duo.breakdown}</span></div>
+            </div>
+            <div class="lb-right">
+              <div class="lb-total">${duo.score}</div>
+              <div class="lb-avg">combined</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <section>
       <div class="hs-btn-wrap reveal">
         <button id="hs-trigger" class="btn-premium" onclick="toggleHighScores()">View Top Performances</button>
       </div>
@@ -470,6 +512,7 @@ const renderApp = () => {
   document.getElementById('app').innerHTML = html;
 };
 
+// ... [KEEP initAnimations, animateCount, and toggleHighScores EXACTLY AS THEY WERE] ...
 const initAnimations = () => {
   const io = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -520,8 +563,6 @@ window.toggleHighScores = () => {
   if (isActive) {
     const rows = list.querySelectorAll('.hs-row');
     rows.forEach((row, i) => setTimeout(() => row.classList.add('in'), 150 + (i * 60)));
-    
-    // Smooth scroll for focus
     setTimeout(() => {
         const offset = window.innerWidth < 600 ? 50 : 100;
         const top = list.getBoundingClientRect().top + window.pageYOffset - offset;
