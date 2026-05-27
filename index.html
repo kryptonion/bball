@@ -133,7 +133,7 @@
     .vs-sep::before, .vs-sep::after { content: ''; width: 1px; height: 36px; background: rgba(245,240,232,0.08); }
     .vs-badge { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--warm-gray); letter-spacing: 2px; }
 
-    /* Leaderboard */
+    /* Leaderboard & Filter Controls */
     .lb-mode-toggle { display: flex; margin-bottom: 20px; border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; }
     .mode-btn { flex: 1; font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; padding: 9px 8px; background: transparent; color: var(--warm-gray); border: none; cursor: pointer; transition: all 0.25s ease; }
     .mode-btn.active { background: var(--ink); color: var(--gold); }
@@ -279,9 +279,26 @@ const UNOFFICIAL_TOP_SCORES = [
   { name: "Soul", score: 167 }
 ];
 
+// ── MANUAL PLAYER ACHIEVEMENTS ───────────────────────────────────────
+const PLAYER_SPECIAL_STATS = {
+  2: { // Season 2
+    Lord: { strikes: 2, clears: 8, gutters: 5, splits: 0 },
+    Kratos: { strikes: 2, clears: 10, gutters: 3, splits: 0 },
+    Soul: { strikes: 4, clears: 9, gutters: 5, splits: 0 },
+    Vortex: { strikes: 6, clears: 6, gutters: 4, splits: 0 }
+  },
+  3: { // Season 3
+    Lord: { strikes: 0, clears: 0, gutters: 0, splits: 0 },
+    Kratos: { strikes: 0, clears: 0, gutters: 0, splits: 0 },
+    Soul: { strikes: 0, clears: 0, gutters: 0, splits: 0 },
+    Vortex: { strikes: 0, clears: 0, gutters: 0, splits: 0 }
+  }
+};
+
 // ── STATE ─────────────────────────────────────────────────────────────
 let currentSeasonIdx = ALL_SEASONS.length - 1;
 let lbMode = 'season';
+let specialSortCategory = 'strikes'; // Default category layout setting
 
 // ── STATS ─────────────────────────────────────────────────────────────
 const processSeasonStats = (sd) => {
@@ -384,9 +401,16 @@ const renderApp = () => {
   const lbData = (lbMode === 'season' && sStats) ? sStats.ranked : atStats.allTimeLb;
   const lbMax  = lbData[0]?.total || 1;
 
-  // VISIBILITY LOGIC: Always visible, plus Draw check
   const isDraw = sd.teams.challenger.score === sd.teams.winner.score;
   const winnerTeam = sd.teams.challenger.score > sd.teams.winner.score ? 'challenger' : (isDraw ? 'draw' : 'winner');
+
+  // Handle Player Special Auto-Ranking
+  let specialPlayersSorted = [];
+  if (PLAYER_SPECIAL_STATS[sd.season]) {
+    specialPlayersSorted = Object.entries(PLAYER_SPECIAL_STATS[sd.season])
+      .map(([name, stats]) => ({ name, stats }))
+      .sort((a, b) => b.stats[specialSortCategory] - a.stats[specialSortCategory]);
+  }
 
   document.getElementById('app').innerHTML = `
     <div class="masthead">
@@ -468,6 +492,43 @@ const renderApp = () => {
         </div>
       </section>
 
+      ${PLAYER_SPECIAL_STATS[sd.season] ? `
+      <section>
+        <div class="section-label reveal">Performance</div>
+        <div class="section-title reveal">Player Specials</div>
+        
+        <div class="lb-mode-toggle reveal">
+          <button class="mode-btn ${specialSortCategory === 'strikes' ? 'active' : ''}" onclick="setSpecialSort('strikes')">Strikes</button>
+          <button class="mode-btn ${specialSortCategory === 'clears' ? 'active' : ''}" onclick="setSpecialSort('clears')">Spares</button>
+          <button class="mode-btn ${specialSortCategory === 'gutters' ? 'active' : ''}" onclick="setSpecialSort('gutters')">Gutters</button>
+        </div>
+
+        <div class="lb-stack stagger">
+          ${specialPlayersSorted.map(({name, stats}, i) => `
+            <div class="lb-row ${i === 0 ? 'top' : ''}">
+              <div class="lb-rank">${i + 1}</div>
+
+              <div class="lb-info">
+                <div class="lb-name">${name}</div>
+                <div class="lb-sub" style="margin-top:8px; line-height:1.9;">
+                  <span style="${specialSortCategory === 'strikes' ? 'color: var(--rust); font-weight:bold;' : ''}">⚡ ${stats.strikes} Strikes</span>
+                  <span style="${specialSortCategory === 'clears' ? 'color: var(--rust); font-weight:bold;' : ''}">✅ ${stats.clears} Spares</span>
+                  <span style="${specialSortCategory === 'gutters' ? 'color: var(--rust); font-weight:bold;' : ''}">🕳️ ${stats.gutters} Gutters</span>
+                </div>
+              </div>
+
+              <div class="lb-right">
+                <div class="lb-total">
+                  ${stats[specialSortCategory]}
+                </div>
+                <div class="lb-avg">${specialSortCategory.slice(0,3).toUpperCase()}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+      ` : ''}
+      
       <section>
         <div class="section-label reveal">Distinctions</div>
         <div class="section-title reveal">${lbMode === 'alltime' ? 'All Time Highlights' : 'Season Highlights'}</div>
@@ -572,7 +633,6 @@ const renderApp = () => {
               <div class="hs-rank">#${i + 1}</div>
               <div>
                 <div class="hs-name" style="color: var(--paper);">${hs.name}</div>
-                
               </div>
               <div class="hs-score" style="color: var(--gold-lt);">${hs.score}</div>
             </div>`).join('')}
@@ -592,10 +652,7 @@ const renderApp = () => {
 // ── INTERACTIONS ──────────────────────────────────────────────────────
 window.switchSeason = (idx) => {
   if (idx === currentSeasonIdx) return;
-  
-  // RESET LEADBOARD MODE TO SEASON
   lbMode = 'season';
-  
   document.getElementById('season-content').classList.add('switching');
   setTimeout(() => {
     currentSeasonIdx = idx;
@@ -605,6 +662,11 @@ window.switchSeason = (idx) => {
 };
 
 window.setLbMode = (mode) => { lbMode = mode; renderApp(); };
+
+window.setSpecialSort = (category) => {
+  specialSortCategory = category;
+  renderApp();
+};
 
 window.toggleGames = () => {
   const list = document.getElementById('games-list');
